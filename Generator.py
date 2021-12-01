@@ -36,9 +36,9 @@ class Generator:
         for i in range(self.num_of_file):
             self.original_files.append(self.generate_single_file(i))
 
-    def get_index(self, index, base=5):
-        # 5 bases length index
-        index_base = ['A', 'A', 'A', 'A', 'A']
+    def get_index(self, index, base=6):
+        # 6 bases length index
+        index_base = ['A' for _ in range(base)]
         for i in range(base):
             index_base[base-i-1] = self.alpha[index % 4]
             index = index // 4
@@ -65,24 +65,25 @@ class Generator:
                 self.info_map_strand[info] = []
                 duplicate = np.maximum(int(np.random.gamma(1.975, 1, 1) * 83.377 - 1.138), 0)
                 for _ in range(duplicate):
-                    tmp = self.amplify_strand(strand)
+                    tmp = Generator.amplify_strand(strand, self.err_rate, self.alpha)
                     self.amplified_pool.append(tmp)
                     self.amplified_strand_info.append(info)
                     self.info_map_strand[info].append(len(self.amplified_pool)-1)
 
-    def amplify_strand(self, strand):
+    @staticmethod
+    def amplify_strand(strand, err, alpha):
         tmp = ''
         for b in strand:
             tie = random.random()
-            if tie < self.err_rate / 3:
+            if tie < err / 3:
                 # insert before
-                tmp += random.choice(self.alpha) + b
-            elif tie < 2 * self.err_rate / 3:
+                tmp += random.choice(alpha) + b
+            elif tie < 2 * err / 3:
                 # delete
                 tmp += ''
-            elif tie < self.err_rate:
+            elif tie < err:
                 # substitute
-                tmp += random.choice(self.alpha)
+                tmp += random.choice(alpha)
             else:
                 tmp += b
         return tmp
