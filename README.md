@@ -7,4 +7,5 @@
 2. Commands:
    - python3 Generator.py -n=35 -e=0.14
    - python3 Utils.py  'real_data_6219/amplified_strands.txt' 'real_data_6219/dna_pool.txt'
+   - python3 Utils.py  'real_data_6219/Primer/primer.txt' 'real_data_6219/Primer/primer_gram'
 3. 
