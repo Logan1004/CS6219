@@ -3,6 +3,7 @@ import time
 import pickle
 import numpy as np
 import itertools
+import argparse
 import concurrent.futures
 from Utils import *
 import os
@@ -78,11 +79,19 @@ def process_func(docu, start, end, n_gram, primer_length, threshold, pid):
 
 
 if __name__ == '__main__':
-    data_docu = 'real_data_6219'
-    process_num = 4
-    q_grams = 5
-    primer_length = 25
-    threshold = 70
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--process', type=int, default=4, help='number of process')
+    parser.add_argument('-l', '--primerLen', type=int, default=25, help='primer length')
+    parser.add_argument('-t', '--threshold', type=int, default=99999, help='edit distance threshold')
+    parser.add_argument('-g', '--q_grams', type=int, default=5, help='q gram size')
+    parser.add_argument('-d', '--docu', type=str, default='real_data_6219', help='input document')
+    args = parser.parse_args()
+
+    data_docu = args.docu
+    process_num = int(args.process)
+    q_grams = int(args.q_grams)
+    primer_length = int(args.primerLen)
+    threshold = int(args.threshold)
 
     clear_directory(os.path.join(data_docu, 'Output'))
 
