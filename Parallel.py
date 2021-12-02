@@ -53,7 +53,7 @@ def process_func(docu, start, end, n_gram, primer_length, threshold, pid):
         ret_id = ret_arr[index][0]
         strand = input_strands[index]
         if ret_id == -1:
-            payloads.append(strand[primer_length, -primer_length])
+            payloads.append(strand[primer_length: -primer_length])
         else:
             payloads.append(get_payload_with_primer(strand, primers[ret_id], primer_length))
 
@@ -79,16 +79,18 @@ def process_func(docu, start, end, n_gram, primer_length, threshold, pid):
 
 if __name__ == '__main__':
     data_docu = 'real_data_6219'
-    process_num = 8
+    process_num = 4
     q_grams = 5
     primer_length = 25
-    threshold = 99999
+    threshold = 70
 
     clear_directory(os.path.join(data_docu, 'Output'))
 
     meta_data_file = 'dna_pool-meta.pkl'
     meta_data_path = os.path.join(data_docu, meta_data_file)
     with open(meta_data_path, "rb") as f: meta = pickle.load(f)
+
+    # meta['strand size'] = 800
 
     cpu_count = min(os.cpu_count(), process_num)
     strands_per_cpu = int(np.ceil( meta['strand size'] / cpu_count))
