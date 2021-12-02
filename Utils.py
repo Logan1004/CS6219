@@ -131,19 +131,19 @@ def clear_directory(dir_path):
         os.remove(path)
 
 if __name__ == '__main__':
-    input_file = sys.argv[1]
-    noise, noise_id = read_amplified_strands(input_file)
-    output_file = sys.argv[2]
-    store_shuffled_strands(output_file, noise, noise_id)
-
-    # primer_file = sys.argv[1]
+    # input_file = sys.argv[1]
+    # noise, noise_id = read_amplified_strands(input_file)
     # output_file = sys.argv[2]
-    # primers = read_primers(primer_file)
-    # for count in [3, 4, 5]:
-    #     mat = []
-    #     grams = generate_n_grams(count)
-    #     for pair in primers:
-    #         identifier = generate_identifier(grams, pair[0], pair[1])
-    #         mat.append(identifier)
-    #     mat = np.array(mat)
-    #     np.save(output_file + '-' + str(count), mat)
+    # store_shuffled_strands(output_file, noise, noise_id)
+
+    primer_file = sys.argv[1]
+    output_file = sys.argv[2]
+    primers = read_primers(primer_file)
+    for count in [6, 7]:
+        mat = []
+        grams = generate_n_grams(count)
+        for pair in primers:
+            identifier = generate_identifier(grams, pair[0], pair[1])
+            mat.append(identifier)
+        mat = np.array(mat)
+        np.save(output_file + '-' + str(count), mat)

@@ -9,7 +9,7 @@ from Utils import *
 import os
 
 
-def process_func(docu, start, end, n_gram, primer_length, threshold, pid):
+def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_threshold, pid):
     stat_record = dict()
     stat_record['pid'] = pid
     start_time = time.time()
@@ -39,12 +39,25 @@ def process_func(docu, start, end, n_gram, primer_length, threshold, pid):
         dist_vec = np.count_nonzero(np.not_equal(primer_id_mat, identifier), axis=1)
         min_id = np.argmin(dist_vec)
         min_dist = dist_vec[min_id]
-        if min_dist > threshold:
+        if min_dist < low_threshold:
+            ret_arr.append([min_id, min_dist])
+            # payloads.append(get_payload_with_primer(strand, primers[min_id], primer_length))
+        elif min_dist > high_threshold:
             ret_arr.append([-1, min_dist])
             # payloads.append(strand[primer_length, -primer_length])
         else:
-            ret_arr.append([min_id, min_dist])
-            # payloads.append(get_payload_with_primer(strand, primers[min_id], primer_length))
+            forward_edit = []
+            backward_edit = []
+            potential = np.argsort(dist_vec)[:3]
+            for pot_id in potential:
+                p = primers[pot_id]
+                tmp_forward_edit = edit_distance(p[0], forward, len(p[0]), len(forward))
+                forward_edit.append(tmp_forward_edit)
+                tmp_backward_edit = edit_distance(p[1], backward, len(p[1]), len(backward))
+                backward_edit.append(tmp_backward_edit)
+            total_edit = np.array(forward_edit) + np.array(backward_edit)
+            min_id = np.argmin(total_edit)
+            ret_arr.append([potential[min_id], min_dist])
 
     tmp_time = time.time()
     stat_record['preprocess'] = tmp_time - start_time
@@ -82,7 +95,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--process', type=int, default=4, help='number of process (default: 4)')
     parser.add_argument('-l', '--primerLen', type=int, default=25, help='primer length (default: 25)')
-    parser.add_argument('-t', '--threshold', type=int, default=99999, help='edit distance threshold (default: 99999)')
+    parser.add_argument('-w', '--low_threshold', type=int, default=99999, help='low edit distance threshold (default: 99999)')
+    parser.add_argument('-v', '--high_threshold', type=int, default=99999, help='high edit distance threshold (default: 99999)')
     parser.add_argument('-g', '--q_grams', type=int, default=5, help='q gram size (default: 5)')
     parser.add_argument('-d', '--docu', type=str, default='real_data_6219', help='input document (default: real_data_6219)')
     args = parser.parse_args()
@@ -91,7 +105,8 @@ if __name__ == '__main__':
     process_num = int(args.process)
     q_grams = int(args.q_grams)
     primer_length = int(args.primerLen)
-    threshold = int(args.threshold)
+    low_threshold = int(args.low_threshold)
+    high_threshold = int(args.high_threshold)
 
     clear_directory(os.path.join(data_docu, 'Output'))
 
@@ -110,7 +125,8 @@ if __name__ == '__main__':
         for pid in range(cpu_count):
             begin = pid * strands_per_cpu
             end = min(begin + strands_per_cpu, meta['strand size'])
-            tmp_fut = executor.submit(process_func, data_docu, begin, end, q_grams, primer_length, threshold, pid)
+            tmp_fut = executor.submit(process_func, data_docu, begin, end, q_grams, primer_length,
+                                      low_threshold, high_threshold, pid)
             future_list.append(tmp_fut)
     parallel_time = time.time() - start
     # print('Parallel Processing Time:', parallel_time)
