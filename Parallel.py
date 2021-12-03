@@ -148,7 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--high_threshold', type=int, default=99999, help='high edit distance threshold (default: 99999)')
     parser.add_argument('-g', '--q_grams', type=int, default=5, help='q gram size (default: 5)')
     parser.add_argument('-d', '--docu', type=str, default='real_data_6219', help='input document (default: real_data_6219)')
-    parser.add_argument('-e', '--extraction', type=int, default=1, help='0 - naive extraction, 1 - precise extraction')
+    parser.add_argument('-e', '--extraction', type=int, default=1, help='0 - naive extraction, 1 - precise extraction (default 1)')
     args = parser.parse_args()
 
     data_docu = args.docu
@@ -183,16 +183,6 @@ if __name__ == '__main__':
     parallel_time = time.time() - start
     # print('Parallel Processing Time:', parallel_time)
 
-    start = time.time()
-    id_sub_file = ['output-' + str(index) + '-id.csv' for index in range(cpu_count)]
-    id_output_file = 'output-id.csv'
-    concatenate_files(id_sub_file, id_output_file, os.path.join(data_docu, 'Output'))
-    payload_sub_file = ['output-' + str(index) + '-payload.txt' for index in range(2)]
-    payload_output_file = 'output-payload.csv'
-    concatenate_files(payload_sub_file, payload_output_file, os.path.join(data_docu, 'Output'))
-    merge_time = time.time() - start
-    # print('Merging Time: ', merge_time)
-
     t_future_list_ext = []
     t_future_list_red = []
     start = time.time()
@@ -208,9 +198,18 @@ if __name__ == '__main__':
             t_future_list_red.append(tmp_fut)
     # for fid in range(meta['primer size']):
     #     reduce_func(data_docu, fid, True)
-
     reduce_time = time.time() - start
-    print(reduce_time)
+    # print(reduce_time)
+
+    start = time.time()
+    id_sub_file = ['output-' + str(index) + '-id.csv' for index in range(cpu_count)]
+    id_output_file = 'output-id.csv'
+    concatenate_files(id_sub_file, id_output_file, os.path.join(data_docu, 'Output'))
+    payload_sub_file = ['output-' + str(index) + '-payload.txt' for index in range(2)]
+    payload_output_file = 'output-payload.csv'
+    concatenate_files(payload_sub_file, payload_output_file, os.path.join(data_docu, 'Output'))
+    merge_time = time.time() - start
+    # print('Merging Time: ', merge_time)
 
     # individual processing time
     output_file_stat = os.path.join(data_docu, 'Output', 'running_statistics.csv')
@@ -224,12 +223,13 @@ if __name__ == '__main__':
                              tmp_stat['preprocess'], tmp_stat['extraction'],
                              tmp_stat['output'] ])
 
-    ext_time_per = []
-    for f in t_future_list_ext:
-        ext_time_per.append(f.result())
-    red_time_per = []
-    for f in t_future_list_red:
-        red_time_per.append(f.result())
-    print('EXT TIME: ', ext_time_per)
-    print('RED TIME: ', red_time_per)
-    print('MAX EXT: ', np.amax(ext_time_per))
+    print("----- Total time: ", parallel_time + reduce_time, " -----")
+    # ext_time_per = []
+    # for f in t_future_list_ext:
+    #     ext_time_per.append(f.result())
+    # red_time_per = []
+    # for f in t_future_list_red:
+    #     red_time_per.append(f.result())
+    # print('EXT TIME: ', ext_time_per)
+    # print('RED TIME: ', red_time_per)
+    # print('MAX EXT: ', np.amax(ext_time_per))
