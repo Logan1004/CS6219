@@ -195,7 +195,7 @@ if __name__ == '__main__':
     t_future_list_red = []
     start = time.time()
     with concurrent.futures.ProcessPoolExecutor(cpu_count) as ext_executor:
-        for ps in range(process_num):
+        for ps in range(cpu_count):
             for fid in range(meta['primer size']):
                 tmp_fut = ext_executor.submit(extract_func, data_docu, fid, ps)
                 t_future_list_ext.append(tmp_fut)
