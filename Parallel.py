@@ -110,8 +110,8 @@ def extract_func(docu, primer_id, process_id):
     if len(position) == 0:
         return -1
     else:
-        start_pos = np.amin(position)
-        end_pos = np.amax(position) + 1
+        start_pos = int(np.amin(position))
+        end_pos = int(np.amax(position)) + 1
 
         input_payload = os.path.join(input_docu, 'output-' + str(process_id) + '-payload.txt')
         output_payload = os.path.join(output_docu, 'o-' + str(process_id) + '.txt')
