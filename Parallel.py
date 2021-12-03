@@ -157,10 +157,10 @@ if __name__ == '__main__':
     low_threshold = int(args.low_threshold)
     high_threshold = int(args.high_threshold)
 
-    # os.makedirs(os.path.join(data_docu, 'Output'), exist_ok=True)
-    # os.makedirs(os.path.join(data_docu, 'Output_files'), exist_ok=True)
-    # clear_directory(os.path.join(data_docu, 'Output'))
-    # clear_directory(os.path.join(data_docu, 'Output_files'))
+    os.makedirs(os.path.join(data_docu, 'Output'), exist_ok=True)
+    os.makedirs(os.path.join(data_docu, 'Output_files'), exist_ok=True)
+    clear_directory(os.path.join(data_docu, 'Output'))
+    clear_directory(os.path.join(data_docu, 'Output_files'))
 
     meta_data_file = 'dna_pool-meta.pkl'
     meta_data_path = os.path.join(data_docu, meta_data_file)
@@ -169,27 +169,27 @@ if __name__ == '__main__':
     cpu_count = min(os.cpu_count(), process_num)
     strands_per_cpu = int(np.ceil( meta['strand size'] / cpu_count))
 
-    # start = time.time()
-    # future_list = []
-    # with concurrent.futures.ProcessPoolExecutor(cpu_count) as executor:
-    #     for pid in range(cpu_count):
-    #         begin = pid * strands_per_cpu
-    #         end = min(begin + strands_per_cpu, meta['strand size'])
-    #         tmp_fut = executor.submit(process_func, data_docu, begin, end, q_grams, primer_length,
-    #                                   low_threshold, high_threshold, pid)
-    #         future_list.append(tmp_fut)
-    # parallel_time = time.time() - start
-    # # print('Parallel Processing Time:', parallel_time)
-    #
-    # start = time.time()
-    # id_sub_file = ['output-' + str(index) + '-id.csv' for index in range(cpu_count)]
-    # id_output_file = 'output-id.csv'
-    # concatenate_files(id_sub_file, id_output_file, os.path.join(data_docu, 'Output'))
-    # payload_sub_file = ['output-' + str(index) + '-payload.txt' for index in range(2)]
-    # payload_output_file = 'output-payload.csv'
-    # concatenate_files(payload_sub_file, payload_output_file, os.path.join(data_docu, 'Output'))
-    # merge_time = time.time() - start
-    # # print('Merging Time: ', merge_time)
+    start = time.time()
+    future_list = []
+    with concurrent.futures.ProcessPoolExecutor(cpu_count) as executor:
+        for pid in range(cpu_count):
+            begin = pid * strands_per_cpu
+            end = min(begin + strands_per_cpu, meta['strand size'])
+            tmp_fut = executor.submit(process_func, data_docu, begin, end, q_grams, primer_length,
+                                      low_threshold, high_threshold, pid)
+            future_list.append(tmp_fut)
+    parallel_time = time.time() - start
+    # print('Parallel Processing Time:', parallel_time)
+
+    start = time.time()
+    id_sub_file = ['output-' + str(index) + '-id.csv' for index in range(cpu_count)]
+    id_output_file = 'output-id.csv'
+    concatenate_files(id_sub_file, id_output_file, os.path.join(data_docu, 'Output'))
+    payload_sub_file = ['output-' + str(index) + '-payload.txt' for index in range(2)]
+    payload_output_file = 'output-payload.csv'
+    concatenate_files(payload_sub_file, payload_output_file, os.path.join(data_docu, 'Output'))
+    merge_time = time.time() - start
+    # print('Merging Time: ', merge_time)
 
     t_future_list_ext = []
     t_future_list_red = []
@@ -207,17 +207,17 @@ if __name__ == '__main__':
     reduce_time = time.time() - start
     # print(reduce_time)
 
-    # # individual processing time
-    # output_file_stat = os.path.join(data_docu, 'Output', 'running_statistics.csv')
-    # with open(output_file_stat, 'w') as f:
-    #     writer = csv.writer(f)
-    #     writer.writerow(['PID', 'initialization', 'preprocess', 'extraction', 'output'])
-    #     writer.writerow(['Total', -1, parallel_time, -1, reduce_time])
-    #     for fut in future_list:
-    #         tmp_stat = fut.result()
-    #         writer.writerow([tmp_stat['pid'], tmp_stat['initialization'],
-    #                          tmp_stat['preprocess'], tmp_stat['extraction'],
-    #                          tmp_stat['output'] ])
+    # individual processing time
+    output_file_stat = os.path.join(data_docu, 'Output', 'running_statistics.csv')
+    with open(output_file_stat, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(['PID', 'initialization', 'preprocess', 'extraction', 'output'])
+        writer.writerow(['Total', -1, parallel_time, -1, reduce_time])
+        for fut in future_list:
+            tmp_stat = fut.result()
+            writer.writerow([tmp_stat['pid'], tmp_stat['initialization'],
+                             tmp_stat['preprocess'], tmp_stat['extraction'],
+                             tmp_stat['output'] ])
 
     ext_time_per = []
     for f in t_future_list_ext:
