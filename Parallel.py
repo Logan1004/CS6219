@@ -43,7 +43,7 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
             ret_arr.append([min_id, min_dist, strand_id+start])
             # payloads.append(get_payload_with_primer(strand, primers[min_id], primer_length))
         elif min_dist > high_threshold:
-            ret_arr.append([-1, min_dist, strand_id+stat])
+            ret_arr.append([-1, min_dist, strand_id+start])
             # payloads.append(strand[primer_length, -primer_length])
         else:
             forward_edit = []
@@ -57,7 +57,7 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
                 backward_edit.append(tmp_backward_edit)
             total_edit = np.array(forward_edit) + np.array(backward_edit)
             min_id = np.argmin(total_edit)
-            ret_arr.append([potential[min_id], min_dist, strand_id+stat])
+            ret_arr.append([potential[min_id], min_dist, strand_id+start])
 
     tmp_time = time.time()
     stat_record['preprocess'] = tmp_time - start_time
@@ -106,16 +106,20 @@ def extract_func(docu, primer_id, process_id):
     intput_id = os.path.join(input_docu, 'output-' + str(process_id) + '-id.csv')
     index = np.genfromtxt(intput_id, delimiter=',', dtype=np.int32)[:, 0]
     position = np.where(index == primer_id)
-    start = np.amin(position)
-    end = np.amax(position) + 1
 
-    input_payload = os.path.join(input_docu, 'output-' + str(process_id) + '-payload.txt')
-    output_payload = os.path.join(output_docu, 'o-' + str(process_id) + '.txt')
-    with open(input_payload, "r") as input_file:
-        with open(output_payload, 'w') as output_file:
-            output_file.writelines(list(itertools.islice(input_file, start, end)))
+    if len(position) == 0:
+        return -1
+    else:
+        start_pos = np.amin(position)
+        end_pos = np.amax(position) + 1
 
-    return time.time() - start_time
+        input_payload = os.path.join(input_docu, 'output-' + str(process_id) + '-payload.txt')
+        output_payload = os.path.join(output_docu, 'o-' + str(process_id) + '.txt')
+        with open(input_payload, "r") as ext_input_file:
+            with open(output_payload, 'w') as ext_output_file:
+                ext_output_file.writelines(list(itertools.islice(ext_input_file, start_pos, end_pos)))
+
+        return time.time() - start_time
 
 
 def reduce_func(docu, primer_id, remove_dir=False):
@@ -153,10 +157,10 @@ if __name__ == '__main__':
     low_threshold = int(args.low_threshold)
     high_threshold = int(args.high_threshold)
 
-    os.makedirs(os.path.join(data_docu, 'Output'), exist_ok=True)
-    os.makedirs(os.path.join(data_docu, 'Output_files'), exist_ok=True)
-    clear_directory(os.path.join(data_docu, 'Output'))
-    clear_directory(os.path.join(data_docu, 'Output_files'))
+    # os.makedirs(os.path.join(data_docu, 'Output'), exist_ok=True)
+    # os.makedirs(os.path.join(data_docu, 'Output_files'), exist_ok=True)
+    # clear_directory(os.path.join(data_docu, 'Output'))
+    # clear_directory(os.path.join(data_docu, 'Output_files'))
 
     meta_data_file = 'dna_pool-meta.pkl'
     meta_data_path = os.path.join(data_docu, meta_data_file)
@@ -165,27 +169,27 @@ if __name__ == '__main__':
     cpu_count = min(os.cpu_count(), process_num)
     strands_per_cpu = int(np.ceil( meta['strand size'] / cpu_count))
 
-    start = time.time()
-    future_list = []
-    with concurrent.futures.ProcessPoolExecutor(cpu_count) as executor:
-        for pid in range(cpu_count):
-            begin = pid * strands_per_cpu
-            end = min(begin + strands_per_cpu, meta['strand size'])
-            tmp_fut = executor.submit(process_func, data_docu, begin, end, q_grams, primer_length,
-                                      low_threshold, high_threshold, pid)
-            future_list.append(tmp_fut)
-    parallel_time = time.time() - start
-    # print('Parallel Processing Time:', parallel_time)
-
-    start = time.time()
-    id_sub_file = ['output-' + str(index) + '-id.csv' for index in range(cpu_count)]
-    id_output_file = 'output-id.csv'
-    concatenate_files(id_sub_file, id_output_file, os.path.join(data_docu, 'Output'))
-    payload_sub_file = ['output-' + str(index) + '-payload.txt' for index in range(2)]
-    payload_output_file = 'output-payload.csv'
-    concatenate_files(payload_sub_file, payload_output_file, os.path.join(data_docu, 'Output'))
-    merge_time = time.time() - start
-    # print('Merging Time: ', merge_time)
+    # start = time.time()
+    # future_list = []
+    # with concurrent.futures.ProcessPoolExecutor(cpu_count) as executor:
+    #     for pid in range(cpu_count):
+    #         begin = pid * strands_per_cpu
+    #         end = min(begin + strands_per_cpu, meta['strand size'])
+    #         tmp_fut = executor.submit(process_func, data_docu, begin, end, q_grams, primer_length,
+    #                                   low_threshold, high_threshold, pid)
+    #         future_list.append(tmp_fut)
+    # parallel_time = time.time() - start
+    # # print('Parallel Processing Time:', parallel_time)
+    #
+    # start = time.time()
+    # id_sub_file = ['output-' + str(index) + '-id.csv' for index in range(cpu_count)]
+    # id_output_file = 'output-id.csv'
+    # concatenate_files(id_sub_file, id_output_file, os.path.join(data_docu, 'Output'))
+    # payload_sub_file = ['output-' + str(index) + '-payload.txt' for index in range(2)]
+    # payload_output_file = 'output-payload.csv'
+    # concatenate_files(payload_sub_file, payload_output_file, os.path.join(data_docu, 'Output'))
+    # merge_time = time.time() - start
+    # # print('Merging Time: ', merge_time)
 
     t_future_list_ext = []
     t_future_list_red = []
@@ -201,24 +205,26 @@ if __name__ == '__main__':
             tmp_fut = red_executor.submit(reduce_func, data_docu, fid, True)
             t_future_list_red.append(tmp_fut)
     reduce_time = time.time() - start
+    # print(reduce_time)
 
-    # individual processing time
-    output_file_stat = os.path.join(data_docu, 'Output', 'running_statistics.csv')
-    with open(output_file_stat, 'w') as f:
-        writer = csv.writer(f)
-        writer.writerow(['PID', 'initialization', 'preprocess', 'extraction', 'output'])
-        writer.writerow(['Total', -1, parallel_time, -1, reduce_time])
-        for fut in future_list:
-            tmp_stat = fut.result()
-            writer.writerow([tmp_stat['pid'], tmp_stat['initialization'],
-                             tmp_stat['preprocess'], tmp_stat['extraction'],
-                             tmp_stat['output'] ])
+    # # individual processing time
+    # output_file_stat = os.path.join(data_docu, 'Output', 'running_statistics.csv')
+    # with open(output_file_stat, 'w') as f:
+    #     writer = csv.writer(f)
+    #     writer.writerow(['PID', 'initialization', 'preprocess', 'extraction', 'output'])
+    #     writer.writerow(['Total', -1, parallel_time, -1, reduce_time])
+    #     for fut in future_list:
+    #         tmp_stat = fut.result()
+    #         writer.writerow([tmp_stat['pid'], tmp_stat['initialization'],
+    #                          tmp_stat['preprocess'], tmp_stat['extraction'],
+    #                          tmp_stat['output'] ])
 
-    # ext_time_per = []
-    # for f in t_future_list_ext:
-    #     ext_time_per.append(f.result())
-    # print('EXT TIME: ', ext_time_per)
-    # red_time_per = []
-    # for f in t_future_list_red:
-    #     red_time_per.append(f.result())
-    # print('RED TIME: ', red_time_per)
+    ext_time_per = []
+    for f in t_future_list_ext:
+        ext_time_per.append(f.result())
+    red_time_per = []
+    for f in t_future_list_red:
+        red_time_per.append(f.result())
+    print('EXT TIME: ', ext_time_per)
+    print('RED TIME: ', red_time_per)
+    print('MAX EXT: ', np.amax(ext_time_per))
