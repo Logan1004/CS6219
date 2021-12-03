@@ -125,11 +125,23 @@ def concatenate_files(input_files, output_file, docu):
             with open(tmp_path, 'rb') as fd:
                 shutil.copyfileobj(fd, wfd)
 
+def concatenate_files_v2(input_files, output_file):
+    with open(output_file, 'wb') as wfd:
+        for tmp_path in input_files:
+            with open(tmp_path, 'rb') as fd:
+                shutil.copyfileobj(fd, wfd)
+
 
 def clear_directory(dir_path):
     for f in os.listdir(dir_path):
-        path = os.path.join(dir_path, f)
-        os.remove(path)
+        file_path = os.path.join(dir_path, f)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
 def generate_underlying_cluster(input_file, output_file):

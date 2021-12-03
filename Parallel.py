@@ -97,6 +97,45 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
     return stat_record
 
 
+def extract_func(docu, primer_id, process_id):
+    start_time = time.time()
+    input_docu = os.path.join(docu, 'Output')
+    output_docu = os.path.join(docu, 'Output_files', str(primer_id))
+    os.makedirs(output_docu, exist_ok=True)
+
+    intput_id = os.path.join(input_docu, 'output-' + str(process_id) + '-id.csv')
+    index = np.genfromtxt(intput_id, delimiter=',', dtype=np.int32)[:, 0]
+    position = np.where(index == primer_id)
+    start = np.amin(position)
+    end = np.amax(position) + 1
+
+    input_payload = os.path.join(input_docu, 'output-' + str(process_id) + '-payload.txt')
+    output_payload = os.path.join(output_docu, 'o-' + str(process_id) + '.txt')
+    with open(input_payload, "r") as input_file:
+        with open(output_payload, 'w') as output_file:
+            output_file.writelines(list(itertools.islice(input_file, start, end)))
+
+    return time.time() - start_time
+
+
+def reduce_func(docu, primer_id, remove_dir=False):
+    start_time = time.time()
+    input_docu = os.path.join(docu, 'Output_files', str(primer_id))
+    reduce_file_path = os.path.join(docu, 'Output_files', 'result-' + str(primer_id) + '.txt')
+
+    f_list = []
+    for f in os.listdir(input_docu):
+        file_path = os.path.join(input_docu, f)
+        if os.path.isfile(file_path):
+            f_list.append(file_path)
+
+    concatenate_files_v2(f_list, reduce_file_path)
+    if remove_dir:
+        shutil.rmtree(input_docu)
+
+    return time.time() - start_time
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--process', type=int, default=4, help='number of process (default: 4)')
@@ -114,13 +153,14 @@ if __name__ == '__main__':
     low_threshold = int(args.low_threshold)
     high_threshold = int(args.high_threshold)
 
+    os.makedirs(os.path.join(data_docu, 'Output'), exist_ok=True)
+    os.makedirs(os.path.join(data_docu, 'Output_files'), exist_ok=True)
     clear_directory(os.path.join(data_docu, 'Output'))
+    clear_directory(os.path.join(data_docu, 'Output_files'))
 
     meta_data_file = 'dna_pool-meta.pkl'
     meta_data_path = os.path.join(data_docu, meta_data_file)
     with open(meta_data_path, "rb") as f: meta = pickle.load(f)
-
-    meta['strand size'] = 800
 
     cpu_count = min(os.cpu_count(), process_num)
     strands_per_cpu = int(np.ceil( meta['strand size'] / cpu_count))
@@ -147,14 +187,38 @@ if __name__ == '__main__':
     merge_time = time.time() - start
     # print('Merging Time: ', merge_time)
 
+    t_future_list_ext = []
+    t_future_list_red = []
+    start = time.time()
+    with concurrent.futures.ThreadPoolExecutor() as ext_executor:
+        for ps in range(process_num):
+            for fid in range(meta['primer size']):
+                tmp_fut = ext_executor.submit(extract_func, data_docu, fid, ps)
+                t_future_list_ext.append(tmp_fut)
+
+    with concurrent.futures.ThreadPoolExecutor() as red_executor:
+        for fid in range(meta['primer size']):
+            tmp_fut = red_executor.submit(reduce_func, data_docu, fid, True)
+            t_future_list_red.append(tmp_fut)
+    reduce_time = time.time() - start
+
     # individual processing time
     output_file_stat = os.path.join(data_docu, 'Output', 'running_statistics.csv')
     with open(output_file_stat, 'w') as f:
         writer = csv.writer(f)
         writer.writerow(['PID', 'initialization', 'preprocess', 'extraction', 'output'])
-        writer.writerow(['Total', -1, parallel_time, -1, merge_time])
+        writer.writerow(['Total', -1, parallel_time, -1, reduce_time])
         for fut in future_list:
             tmp_stat = fut.result()
             writer.writerow([tmp_stat['pid'], tmp_stat['initialization'],
                              tmp_stat['preprocess'], tmp_stat['extraction'],
                              tmp_stat['output'] ])
+
+    # ext_time_per = []
+    # for f in t_future_list_ext:
+    #     ext_time_per.append(f.result())
+    # print('EXT TIME: ', ext_time_per)
+    # red_time_per = []
+    # for f in t_future_list_red:
+    #     red_time_per.append(f.result())
+    # print('RED TIME: ', red_time_per)

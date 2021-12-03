@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 docu = 'real_data_6219'
 primer_path = os.path.join(docu, 'Primer', 'primer.txt')
 primers = read_primers(primer_path)
+primer_length = len(primers[0][0])
 reference = os.path.join(docu, 'raw_data', 'outpout.txt')
 with open(reference, 'r') as f: ref_str = f.readlines()
 
@@ -38,7 +39,7 @@ miss = 0
 for i in range(len(result)):
     s_id = strand_id[i]
     id = index[s_id]
-    forward_truth = ref_str[id].strip()[:25]
+    forward_truth = ref_str[id].strip()[:primer_length]
     if result[i] == -1:
         miss += 1
         continue
@@ -83,5 +84,5 @@ with open(wrong_info_path, 'w') as f:
         predict_id = result[i]
         strand = pool[i]
         ref_strand = ref_str[label_id].strip().split('_')[0]
-        csvwriter.writerow([i, ref_strand[:25], ref_strand[-25:],
+        csvwriter.writerow([i, ref_strand[:primer_length], ref_strand[-primer_length:],
                             primers[predict_id][0], primers[predict_id][1], strand.strip()])
