@@ -125,10 +125,48 @@ def concatenate_files(input_files, output_file, docu):
             with open(tmp_path, 'rb') as fd:
                 shutil.copyfileobj(fd, wfd)
 
+
 def clear_directory(dir_path):
     for f in os.listdir(dir_path):
         path = os.path.join(dir_path, f)
         os.remove(path)
+
+
+def generate_underlying_cluster(input_file, output_file):
+    clusters = []
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+        for i in range(len(lines)):
+            arr = lines[i].strip()
+            if arr.isnumeric():
+                tmp_clu = []
+                for j in range(int(arr)):
+                    tmp_clu.append(lines[i + 2 + j].strip())
+                clusters.append(tmp_clu)
+
+    with open(output_file, 'w') as f:
+        csvwriter = csv.writer(f)
+        for i in range(len(clusters)):
+            csvwriter.writerow(['CLUSTER ' + str(i)])
+            for s in clusters[i]:
+                csvwriter.writerow([s])
+
+
+def generate_raw_data_from_amplified(input_file, output_file):
+    raw_data = []
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+        for i in range(len(lines)):
+            arr = lines[i].strip()
+            if arr.isnumeric():
+                raw_data.append([lines[i+1].strip(),int(arr)])
+
+    with open(output_file, 'w') as f:
+        csvwriter = csv.writer(f)
+        for r in raw_data:
+            tmp = r[0] + '_' + str(r[1])
+            csvwriter.writerow([tmp])
+
 
 if __name__ == '__main__':
     # input_file = sys.argv[1]
@@ -136,14 +174,24 @@ if __name__ == '__main__':
     # output_file = sys.argv[2]
     # store_shuffled_strands(output_file, noise, noise_id)
 
-    primer_file = sys.argv[1]
+    # primer_file = sys.argv[1]
+    # output_file = sys.argv[2]
+    # primers = read_primers(primer_file)
+    # for count in [6, 7]:
+    #     mat = []
+    #     grams = generate_n_grams(count)
+    #     for pair in primers:
+    #         identifier = generate_identifier(grams, pair[0], pair[1])
+    #         mat.append(identifier)
+    #     mat = np.array(mat)
+    #     np.save(output_file + '-' + str(count), mat)
+
+    # Command: Python3 Utils.py 'real_data_6219/amplified_strands.txt' 'real_data_6219/UnderlyingClusters.txt'
+    # input_file = sys.argv[1]
+    # output_file = sys.argv[2]
+    # generate_underlying_cluster(input_file, output_file)
+
+    # Command: Python3 Utils.py 'synthesis_data_6219/amplified_strands.txt' 'synthesis_data_6219/raw_data/output.txt'
+    input_file = sys.argv[1]
     output_file = sys.argv[2]
-    primers = read_primers(primer_file)
-    for count in [6, 7]:
-        mat = []
-        grams = generate_n_grams(count)
-        for pair in primers:
-            identifier = generate_identifier(grams, pair[0], pair[1])
-            mat.append(identifier)
-        mat = np.array(mat)
-        np.save(output_file + '-' + str(count), mat)
+    generate_raw_data_from_amplified(input_file, output_file)

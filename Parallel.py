@@ -32,7 +32,7 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
 
     ret_arr = []
     payloads = []
-    for strand in input_strands:
+    for strand_id, strand in enumerate(input_strands):
         forward = strand[:primer_length]
         backward = strand[-primer_length:]
         identifier = generate_identifier(grams, forward, backward)
@@ -40,10 +40,10 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
         min_id = np.argmin(dist_vec)
         min_dist = dist_vec[min_id]
         if min_dist < low_threshold:
-            ret_arr.append([min_id, min_dist])
+            ret_arr.append([min_id, min_dist, strand_id+start])
             # payloads.append(get_payload_with_primer(strand, primers[min_id], primer_length))
         elif min_dist > high_threshold:
-            ret_arr.append([-1, min_dist])
+            ret_arr.append([-1, min_dist, strand_id+stat])
             # payloads.append(strand[primer_length, -primer_length])
         else:
             forward_edit = []
@@ -57,7 +57,7 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
                 backward_edit.append(tmp_backward_edit)
             total_edit = np.array(forward_edit) + np.array(backward_edit)
             min_id = np.argmin(total_edit)
-            ret_arr.append([potential[min_id], min_dist])
+            ret_arr.append([potential[min_id], min_dist, strand_id+stat])
 
     tmp_time = time.time()
     stat_record['preprocess'] = tmp_time - start_time
@@ -76,14 +76,20 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
     start_time = tmp_time
 
     output_file_id = os.path.join(docu, 'Output', 'output-' + str(pid) +'-id.csv')
-    with open(output_file_id, 'w') as f:
-        writer = csv.writer(f)
-        writer.writerows(ret_arr)
+    ret_arr = np.array(ret_arr)
+    sorted_idx = np.argsort(ret_arr[:, 0], axis=0)
+    ret_arr = ret_arr[sorted_idx]
+    payloads = np.array(payloads)[sorted_idx]
+    np.savetxt(output_file_id, ret_arr, delimiter=",", fmt='%d')
+    # with open(output_file_id, 'w') as f:
+    #     writer = csv.writer(f)
+    #     writer.writerows(ret_arr)
 
     output_file_id = os.path.join(docu, 'Output', 'output-' + str(pid) +'-payload.txt')
-    with open(output_file_id, 'w') as f:
-        for s in payloads:
-            f.write(s + '\n')
+    np.savetxt(output_file_id, payloads, delimiter=",", fmt='%s')
+    # with open(output_file_id, 'w') as f:
+    #     for s in payloads:
+    #         f.write(s + '\n')
 
     tmp_time = time.time()
     stat_record['output'] = tmp_time - start_time
@@ -114,7 +120,7 @@ if __name__ == '__main__':
     meta_data_path = os.path.join(data_docu, meta_data_file)
     with open(meta_data_path, "rb") as f: meta = pickle.load(f)
 
-    # meta['strand size'] = 800
+    meta['strand size'] = 800
 
     cpu_count = min(os.cpu_count(), process_num)
     strands_per_cpu = int(np.ceil( meta['strand size'] / cpu_count))

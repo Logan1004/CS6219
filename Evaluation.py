@@ -15,6 +15,7 @@ result_path = os.path.join(docu, 'Output', 'output-id.csv')
 result = []
 lines = None
 distance = []
+strand_id = []
 wrong_distance = []
 wrong_case = []
 wrong_id = []
@@ -26,6 +27,7 @@ with open(result_path, 'r') as f:
         arr = line.strip().split(',')
         result.append(int(arr[0]))
         distance.append(int(arr[1]))
+        strand_id.append(int(arr[-1]))
 
 index_path = os.path.join(docu, 'dna_pool-index.csv')
 with open(index_path, 'r') as f: index = f.readlines()
@@ -34,7 +36,8 @@ index = [int(a.strip()) for a in index]
 acc = []
 miss = 0
 for i in range(len(result)):
-    id = index[i]
+    s_id = strand_id[i]
+    id = index[s_id]
     forward_truth = ref_str[id].strip()[:25]
     if result[i] == -1:
         miss += 1
