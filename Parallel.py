@@ -194,18 +194,21 @@ if __name__ == '__main__':
     t_future_list_ext = []
     t_future_list_red = []
     start = time.time()
-    with concurrent.futures.ThreadPoolExecutor() as ext_executor:
+    with concurrent.futures.ProcessPoolExecutor(cpu_count) as ext_executor:
         for ps in range(process_num):
             for fid in range(meta['primer size']):
                 tmp_fut = ext_executor.submit(extract_func, data_docu, fid, ps)
                 t_future_list_ext.append(tmp_fut)
 
-    with concurrent.futures.ThreadPoolExecutor() as red_executor:
+    with concurrent.futures.ProcessPoolExecutor(cpu_count) as red_executor:
         for fid in range(meta['primer size']):
             tmp_fut = red_executor.submit(reduce_func, data_docu, fid, True)
             t_future_list_red.append(tmp_fut)
+    # for fid in range(meta['primer size']):
+    #     reduce_func(data_docu, fid, True)
+
     reduce_time = time.time() - start
-    # print(reduce_time)
+    print(reduce_time)
 
     # individual processing time
     output_file_stat = os.path.join(data_docu, 'Output', 'running_statistics.csv')
