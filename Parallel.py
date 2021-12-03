@@ -9,7 +9,7 @@ from Utils import *
 import os
 
 
-def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_threshold, pid):
+def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_threshold, pid, ext_version):
     stat_record = dict()
     stat_record['pid'] = pid
     start_time = time.time()
@@ -66,7 +66,7 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
     for index in range(len(ret_arr)):
         ret_id = ret_arr[index][0]
         strand = input_strands[index]
-        if ret_id == -1:
+        if ret_id == -1 or ext_version == 0:
             payloads.append(strand[primer_length: -primer_length])
         else:
             payloads.append(get_payload_with_primer(strand, primers[ret_id], primer_length))
@@ -148,6 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--high_threshold', type=int, default=99999, help='high edit distance threshold (default: 99999)')
     parser.add_argument('-g', '--q_grams', type=int, default=5, help='q gram size (default: 5)')
     parser.add_argument('-d', '--docu', type=str, default='real_data_6219', help='input document (default: real_data_6219)')
+    parser.add_argument('-e', '--extraction', type=int, default=1, help='0 - naive extraction, 1 - precise extraction')
     args = parser.parse_args()
 
     data_docu = args.docu
@@ -156,6 +157,7 @@ if __name__ == '__main__':
     primer_length = int(args.primerLen)
     low_threshold = int(args.low_threshold)
     high_threshold = int(args.high_threshold)
+    extraction_version = int(args.extraction)
 
     os.makedirs(os.path.join(data_docu, 'Output'), exist_ok=True)
     os.makedirs(os.path.join(data_docu, 'Output_files'), exist_ok=True)
@@ -176,7 +178,7 @@ if __name__ == '__main__':
             begin = pid * strands_per_cpu
             end = min(begin + strands_per_cpu, meta['strand size'])
             tmp_fut = executor.submit(process_func, data_docu, begin, end, q_grams, primer_length,
-                                      low_threshold, high_threshold, pid)
+                                      low_threshold, high_threshold, pid, extraction_version)
             future_list.append(tmp_fut)
     parallel_time = time.time() - start
     # print('Parallel Processing Time:', parallel_time)
