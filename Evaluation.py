@@ -4,8 +4,13 @@ from Utils import *
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
-docu = 'real_data_6219'
+parser = argparse.ArgumentParser()
+parser.add_argument('-d', '--docu', type=str, default='real_data_6219', help='input document (default: real_data_6219)')
+args = parser.parse_args()
+
+docu = args.docu
 primer_path = os.path.join(docu, 'Primer', 'primer.txt')
 primers = read_primers(primer_path)
 primer_length = len(primers[0][0])

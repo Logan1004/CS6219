@@ -1,11 +1,14 @@
 import os
 import numpy as np
+from Utils import *
 from Generator import Generator
 import matplotlib.pyplot as plt
 
-data_docu = 'real_data_6219/raw_data'
+data_docu = 'lowErr_real_data_6219'
 file_name = 'outpout.txt'
-data_path = os.path.join(data_docu, file_name)
+error_rate = 0.03
+primer_size = 13
+data_path = os.path.join(data_docu, 'raw_data', file_name)
 
 reference = []
 times = []
@@ -21,13 +24,12 @@ for i in range(len(reference)):
     ref_strand = reference[i]
     tmp = []
     for _ in range(times[i]):
-        tmp.append(Generator.amplify_strand(ref_strand, 0.14, ['A', 'T', 'C', 'G']))
+        tmp.append(Generator.amplify_strand(ref_strand, error_rate, ['A', 'T', 'C', 'G']))
     noise.append(tmp)
 
-output_docu = 'real_data_6219'
 output_file = 'amplified_strands.txt'
-output_path = os.path.join(output_docu, output_file)
-with open(output_path, 'w') as f:
+output_path_1 = os.path.join(data_docu, output_file)
+with open(output_path_1, 'w') as f:
     for i in range(len(reference)):
         num = times[i]
         ref_strand = reference[i]
@@ -35,6 +37,13 @@ with open(output_path, 'w') as f:
         f.write(ref_strand + '\n')
         for n in noise[i]:
             f.write(n + '\n')
+
+noise, noise_id = read_amplified_strands(output_path_1)
+output_path_2 = os.path.join(data_docu, 'dna_pool.txt')
+store_shuffled_strands(output_path_2, noise, noise_id, primer_size)
+
+output_path_3 = os.path.join(data_docu, 'UnderlyingClusters.txt')
+generate_underlying_cluster(output_path_1, output_path_3)
 
 # value_list = []
 # with open(data_path, 'r') as f:

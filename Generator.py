@@ -2,17 +2,24 @@ import os
 import random
 import csv
 import argparse
+from Utils import *
 import numpy as np
 np.random.seed(6219)
 file_size_range = [700, 1400]
 
 class Generator:
-    def __init__(self, num_of_file=35, error_rate=0.3):
-        self.data_document = 'synthesis_data_6219/Primer'
+    def __init__(self, num_of_file, error_rate, data_docu, duplicate):
+        self.data_document = os.path.join(data_docu, 'Primer')
         self.primer_file = 'primer.txt'
         self.alpha = ['A', 'T', 'C', 'G']
         self.num_of_file = num_of_file
         self.err_rate = error_rate
+        if duplicate == 'gamma':
+            self.gamma = True
+        else:
+            self.gamma = False
+            self.duplicate = int(duplicate)
+
         self.primers_arr = []
         self.read_primer() # read primers
         self.original_files = []
@@ -21,9 +28,9 @@ class Generator:
         self.amplified_strand_info = []
         self.info_map_strand = {}
         self.amplify_dna_pool() # amplify the dna pool
-        self.shuffled_index = []
-        self.shuffled_pool = []
-        self.shuffle_dna_pool()  # amplify the dna pool
+        # self.shuffled_index = []
+        # self.shuffled_pool = []
+        # self.shuffle_dna_pool()  # amplify the dna pool
 
     def read_primer(self):
         file = os.path.join(self.data_document, self.primer_file)
@@ -60,10 +67,14 @@ class Generator:
     def amplify_dna_pool(self):
         for f_id, file in enumerate(self.original_files):
             for s_id, strand in enumerate(file):
-                # duplicate = self.duplicate
                 info = tuple([f_id, s_id])
                 self.info_map_strand[info] = []
-                duplicate = np.maximum(int(np.random.gamma(1.975, 1, 1) * 83.377 - 1.138), 0)
+
+                if self.gamma:
+                    duplicate = np.maximum(int(np.random.gamma(1.975, 1, 1) * 83.377 - 1.138), 0)
+                else:
+                    duplicate = self.duplicate
+
                 for _ in range(duplicate):
                     tmp = Generator.amplify_strand(strand, self.err_rate, self.alpha)
                     self.amplified_pool.append(tmp)
@@ -121,11 +132,28 @@ class Generator:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--num_of_files', type=int, default=1, help='Number of files generated, ranging from 0 to 35')
-    parser.add_argument('-e', '--error_rate', type=float, default=0.0, help='Error rate, ranging from 0 to 1')
+    parser.add_argument('-n', '--num_of_files', type=int, default=1, help='Number of files generated, ranging from 0 to 35 (default: 1)')
+    parser.add_argument('-e', '--error_rate', type=float, default=0.0, help='Error rate, ranging from 0 to 1 (default: 0.0)')
+    parser.add_argument('-d', '--data_document', type=str, default='synthesis_data_6219', help='input data document (default: synthesis_data_6219)')
+    parser.add_argument('-p', '--duplicate', type=str, default='gamma', help='data duplicate (default: gamma)')
     args = parser.parse_args()
 
-    file_name = 'strand-' + str(args.num_of_files) + '-' + "{:.3f}".format(args.error_rate) + '.txt'
-    output_file = os.path.join('synthesis_data_6219', file_name)
-    gen = Generator(num_of_file=args.num_of_files, error_rate=args.error_rate)
-    gen.store_clustered_pool(output_file)
+    data_docu = args.data_document
+
+    output_path_1 = os.path.join(data_docu, 'amplified_strands.txt')
+    gen = Generator(num_of_file=args.num_of_files, error_rate=args.error_rate,
+                    data_docu=data_docu, duplicate=args.duplicate)
+    gen.store_clustered_pool(output_path_1)
+
+    noise, noise_id = read_amplified_strands(output_path_1)
+    output_path_2 = os.path.join(data_docu, 'dna_pool.txt')
+    store_shuffled_strands(output_path_2, noise, noise_id, 35)
+
+    output_path_3 = os.path.join(data_docu, 'UnderlyingClusters.txt')
+    generate_underlying_cluster(output_path_1, output_path_3)
+
+    os.makedirs(os.path.join(data_docu, 'raw_data'), exist_ok=True)
+    output_path_4 = os.path.join(data_docu, 'raw_data', 'output.txt')
+    generate_raw_data_from_amplified(output_path_1, output_path_4)
+
+

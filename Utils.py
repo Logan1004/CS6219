@@ -22,7 +22,7 @@ def read_amplified_strands(input_file):
     return noise, noise_id
 
 
-def store_shuffled_strands(output, noise, noise_id):
+def store_shuffled_strands(output, noise, noise_id, primer_size):
     index = list(range(len(noise)))
     random.shuffle(index)
     with open(output, 'w') as f:
@@ -38,6 +38,7 @@ def store_shuffled_strands(output, noise, noise_id):
     output3 = output[:-4] + '-meta.pkl'
     meta = {}
     meta['strand size'] = len(noise)
+    meta['primer size'] = primer_size
     with open(output3, 'wb') as f:
         pickle.dump(meta, f)
 
@@ -150,10 +151,10 @@ def generate_underlying_cluster(input_file, output_file):
         lines = f.readlines()
         for i in range(len(lines)):
             arr = lines[i].strip()
-            if arr.isnumeric():
+            if arr.isnumeric() and lines[i+1].strip()[:20] == 'AAGGCAAGTTGTTACCAGCA':
                 tmp_clu = []
                 for j in range(int(arr)):
-                    tmp_clu.append(lines[i + 2 + j].strip())
+                    tmp_clu.append(lines[i + 2 + j].strip()[20:-20])
                 clusters.append(tmp_clu)
 
     with open(output_file, 'w') as f:
@@ -198,12 +199,12 @@ if __name__ == '__main__':
     #     mat = np.array(mat)
     #     np.save(output_file + '-' + str(count), mat)
 
-    # Command: Python3 Utils.py 'real_data_6219/amplified_strands.txt' 'real_data_6219/UnderlyingClusters.txt'
-    # input_file = sys.argv[1]
-    # output_file = sys.argv[2]
-    # generate_underlying_cluster(input_file, output_file)
-
-    # Command: Python3 Utils.py 'synthesis_data_6219/amplified_strands.txt' 'synthesis_data_6219/raw_data/output.txt'
+    # Command: Python3 Utils.py 'synthesis_data_6219/amplified_strands.txt' 'synthesis_data_6219/UnderlyingClusters.txt'
     input_file = sys.argv[1]
     output_file = sys.argv[2]
-    generate_raw_data_from_amplified(input_file, output_file)
+    generate_underlying_cluster(input_file, output_file)
+
+    # Command: Python3 Utils.py 'synthesis_data_6219/amplified_strands.txt' 'synthesis_data_6219/raw_data/output.txt'
+    # input_file = sys.argv[1]
+    # output_file = sys.argv[2]
+    # generate_raw_data_from_amplified(input_file, output_file)
