@@ -83,7 +83,7 @@ print('DROP: ', miss / len(result))
 pool_path = os.path.join(docu, 'dna_pool.txt')
 with open(pool_path, 'r') as f:
     pool = f.readlines()
-primer_path = os.path.join(docu, 'Primer', 'primer.txt')
+primer_path = os.path.join(docu, p_folder, 'primer.txt')
 primers = read_primers(primer_path)
 wrong_info_path = os.path.join(docu, 'wrong_information.txt')
 with open(wrong_info_path, 'w') as f:
