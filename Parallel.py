@@ -9,7 +9,7 @@ from Utils import *
 import os
 
 
-def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_threshold, pid, ext_version):
+def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_threshold, pid, ext_version, primer_size):
     stat_record = dict()
     stat_record['pid'] = pid
     start_time = time.time()
@@ -21,8 +21,12 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
             input_strands.append(line.strip())
 
     grams = generate_n_grams(n_gram)
-    primer_id_path = os.path.join(docu, 'Primer', 'primer_gram-' + str(n_gram) +'.npy')
-    primer_path = os.path.join(docu, 'Primer', 'primer.txt')
+    if primer_size == -1:
+        primer_folder = 'Primer'
+    else:
+        primer_folder = 'Primer_' + str(primer_size)
+    primer_id_path = os.path.join(docu, primer_folder, 'primer_gram-' + str(n_gram) +'.npy')
+    primer_path = os.path.join(docu, primer_folder, 'primer.txt')
     primers = read_primers(primer_path)
     primer_id_mat = np.load(primer_id_path)
 
@@ -181,7 +185,7 @@ if __name__ == '__main__':
             begin = pid * strands_per_cpu
             end = min(begin + strands_per_cpu, meta['strand size'])
             tmp_fut = executor.submit(process_func, data_docu, begin, end, q_grams, primer_length,
-                                      low_threshold, high_threshold, pid, extraction_version)
+                                      low_threshold, high_threshold, pid, extraction_version, meta['primer size'])
             future_list.append(tmp_fut)
     parallel_time = time.time() - start
     # print('Parallel Processing Time:', parallel_time)
