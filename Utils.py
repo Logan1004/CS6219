@@ -151,18 +151,17 @@ def generate_underlying_cluster(input_file, output_file):
         lines = f.readlines()
         for i in range(len(lines)):
             arr = lines[i].strip()
-            if arr.isnumeric() and lines[i+1].strip()[:20] == 'AAGGCAAGTTGTTACCAGCA':
+            if arr.isnumeric():
                 tmp_clu = []
                 for j in range(int(arr)):
-                    tmp_clu.append(lines[i + 2 + j].strip()[20:-20])
+                    tmp_clu.append(lines[i + 2 + j].strip())
                 clusters.append(tmp_clu)
 
     with open(output_file, 'w') as f:
-        csvwriter = csv.writer(f)
         for i in range(len(clusters)):
-            csvwriter.writerow(['CLUSTER ' + str(i)])
+            f.write("CLUSTER " + str(i) + "\n")
             for s in clusters[i]:
-                csvwriter.writerow([s])
+                f.write(s.strip() + "\n")
 
 
 def generate_raw_data_from_amplified(input_file, output_file):

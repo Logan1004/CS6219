@@ -181,5 +181,7 @@ lowErr_real_data_6219/
 lowErr_FixedC_synthesis_data_6219/
 lowErr_synthesis_data_6219/
 FixedC_synthesis_data_6219/
+OneFile_lowErr_FixedC_synthesis_data_6219/
+minilab_data_6219/
 Test/
 *.ipynb

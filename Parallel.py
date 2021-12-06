@@ -149,6 +149,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--q_grams', type=int, default=5, help='q gram size (default: 5)')
     parser.add_argument('-d', '--docu', type=str, default='real_data_6219', help='input document (default: real_data_6219)')
     parser.add_argument('-e', '--extraction', type=int, default=1, help='0 - naive extraction, 1 - precise extraction (default 1)')
+    parser.add_argument('-s', '--primer_size', type=int, default=-1, help='-1 - meta, >1 - customer (default -1)')
     args = parser.parse_args()
 
     data_docu = args.docu
@@ -167,6 +168,8 @@ if __name__ == '__main__':
     meta_data_file = 'dna_pool-meta.pkl'
     meta_data_path = os.path.join(data_docu, meta_data_file)
     with open(meta_data_path, "rb") as f: meta = pickle.load(f)
+    if int(args.primer_size) != -1:
+        meta['primer size'] = int(args.primer_size)
 
     cpu_count = min(os.cpu_count(), process_num)
     strands_per_cpu = int(np.ceil( meta['strand size'] / cpu_count))
