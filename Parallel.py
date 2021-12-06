@@ -231,12 +231,12 @@ if __name__ == '__main__':
                              tmp_stat['output'] ])
 
     print("----- Total time: ", parallel_time + reduce_time, " -----")
-    ext_time_per = []
-    for f in t_future_list_ext:
-        ext_time_per.append(f.result())
-    red_time_per = []
-    for f in t_future_list_red:
-        red_time_per.append(f.result())
-    print('EXT TIME: ', ext_time_per)
-    print('RED TIME: ', red_time_per)
-    print('MAX EXT: ', np.amax(ext_time_per))
+    # ext_time_per = []
+    # for f in t_future_list_ext:
+    #     ext_time_per.append(f.result())
+    # red_time_per = []
+    # for f in t_future_list_red:
+    #     red_time_per.append(f.result())
+    # print('EXT TIME: ', ext_time_per)
+    # print('RED TIME: ', red_time_per)
+    # print('MAX EXT: ', np.amax(ext_time_per))
