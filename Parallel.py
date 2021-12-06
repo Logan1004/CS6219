@@ -111,7 +111,7 @@ def extract_func(docu, primer_id, process_id):
     index = np.genfromtxt(intput_id, delimiter=',', dtype=np.int32)[:, 0]
     position = np.where(index == primer_id)
 
-    if len(position) == 0:
+    if len(position[0]) == 0:
         return -1
     else:
         start_pos = int(np.amin(position))
@@ -194,8 +194,8 @@ if __name__ == '__main__':
     t_future_list_red = []
     start = time.time()
     with concurrent.futures.ProcessPoolExecutor(cpu_count) as ext_executor:
-        for ps in range(cpu_count):
-            for fid in range(meta['primer size']):
+        for fid in range(meta['primer size']):
+            for ps in range(cpu_count):
                 tmp_fut = ext_executor.submit(extract_func, data_docu, fid, ps)
                 t_future_list_ext.append(tmp_fut)
 
@@ -231,12 +231,12 @@ if __name__ == '__main__':
                              tmp_stat['output'] ])
 
     print("----- Total time: ", parallel_time + reduce_time, " -----")
-    # ext_time_per = []
-    # for f in t_future_list_ext:
-    #     ext_time_per.append(f.result())
-    # red_time_per = []
-    # for f in t_future_list_red:
-    #     red_time_per.append(f.result())
-    # print('EXT TIME: ', ext_time_per)
-    # print('RED TIME: ', red_time_per)
-    # print('MAX EXT: ', np.amax(ext_time_per))
+    ext_time_per = []
+    for f in t_future_list_ext:
+        ext_time_per.append(f.result())
+    red_time_per = []
+    for f in t_future_list_red:
+        red_time_per.append(f.result())
+    print('EXT TIME: ', ext_time_per)
+    print('RED TIME: ', red_time_per)
+    print('MAX EXT: ', np.amax(ext_time_per))
