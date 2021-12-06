@@ -44,10 +44,10 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
         min_id = np.argmin(dist_vec)
         min_dist = dist_vec[min_id]
         if min_dist < low_threshold:
-            ret_arr.append([min_id, min_dist, strand_id+start])
+            ret_arr.append([min_id]) #, min_dist, strand_id+start])
             # payloads.append(get_payload_with_primer(strand, primers[min_id], primer_length))
         elif min_dist > high_threshold:
-            ret_arr.append([-1, min_dist, strand_id+start])
+            ret_arr.append([-1]) # , min_dist, strand_id+start])
             # payloads.append(strand[primer_length, -primer_length])
         else:
             forward_edit = []
@@ -61,7 +61,7 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
                 backward_edit.append(tmp_backward_edit)
             total_edit = np.array(forward_edit) + np.array(backward_edit)
             min_id = np.argmin(total_edit)
-            ret_arr.append([potential[min_id], min_dist, strand_id+start])
+            ret_arr.append([potential[min_id]]) #, min_dist, strand_id+start])
 
     tmp_time = time.time()
     stat_record['preprocess'] = tmp_time - start_time
@@ -101,18 +101,17 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
     return stat_record
 
 
-def extract_func(docu, primer_id, process_id):
+def extract_func(docu, primer_id, process_id, index):
     start_time = time.time()
     input_docu = os.path.join(docu, 'Output')
     output_docu = os.path.join(docu, 'Output_files', str(primer_id))
     os.makedirs(output_docu, exist_ok=True)
 
-    intput_id = os.path.join(input_docu, 'output-' + str(process_id) + '-id.csv')
-    index = np.genfromtxt(intput_id, delimiter=',', dtype=np.int32)[:, 0]
+    # index = np.genfromtxt(intput_id, delimiter=',', dtype=np.int32)[:, 0]
     position = np.where(index == primer_id)
 
     if len(position[0]) == 0:
-        return -1
+        return time.time() - start_time
     else:
         start_pos = int(np.amin(position))
         end_pos = int(np.amax(position)) + 1
@@ -194,9 +193,14 @@ if __name__ == '__main__':
     t_future_list_red = []
     start = time.time()
     with concurrent.futures.ProcessPoolExecutor(cpu_count) as ext_executor:
-        for fid in range(meta['primer size']):
-            for ps in range(cpu_count):
-                tmp_fut = ext_executor.submit(extract_func, data_docu, fid, ps)
+        for ps in range(cpu_count):
+            intput_ps_path = os.path.join(data_docu, 'Output', 'output-' + str(ps) + '-id.csv')
+            with open(intput_ps_path) as f:
+                lines = f.readlines()
+                index = [int(line.strip()) for line in lines]
+            index = np.array(index, dtype=np.int32)
+            for fid in range(meta['primer size']):
+                tmp_fut = ext_executor.submit(extract_func, data_docu, fid, ps, np.copy(index))
                 t_future_list_ext.append(tmp_fut)
 
     with concurrent.futures.ProcessPoolExecutor(cpu_count) as red_executor:
