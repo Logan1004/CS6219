@@ -8,10 +8,15 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--docu', type=str, default='real_data_6219', help='input document (default: real_data_6219)')
+parser.add_argument('-s', '--primer_size', type=int, default=-1, help='primer size')
 args = parser.parse_args()
 
 docu = args.docu
-primer_path = os.path.join(docu, 'Primer', 'primer.txt')
+if args.primer_size == -1:
+    p_folder = 'Primer'
+else:
+    p_folder = 'Primer_' + str(args.primer_size)
+primer_path = os.path.join(docu, p_folder, 'primer.txt')
 primers = read_primers(primer_path)
 primer_length = len(primers[0][0])
 reference = os.path.join(docu, 'raw_data', 'outpout.txt')
