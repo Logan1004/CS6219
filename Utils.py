@@ -204,6 +204,17 @@ def fast_distance_calculate(primer_m, strand_m):
             #ret_mat[i, j] = np.sum(strand_m[i, :] ^ primer_m[j, :])
     return ret_mat
 
+
+def test_equal(docu1, docu2, num_of_file):
+    for i in range(num_of_file):
+        file = 'result-' + str(i) + '.txt'
+        path_1 = os.path.join(docu1, file)
+        path_2 = os.path.join(docu2, file)
+        with open(path_1, 'r') as f: lines_1 = f.readlines()
+        with open(path_2, 'r') as f: lines_2 = f.readlines()
+        assert lines_1 == lines_2
+
+
 if __name__ == '__main__':
     # input_file = sys.argv[1]
     # noise, noise_id = read_amplified_strands(input_file)

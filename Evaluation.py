@@ -22,7 +22,8 @@ primer_length = len(primers[0][0])
 reference = os.path.join(docu, 'raw_data', 'outpout.txt')
 with open(reference, 'r') as f: ref_str = f.readlines()
 
-result_path = os.path.join(docu, 'Output', 'output-id.csv')
+# result_path = os.path.join(docu, 'Output', 'output-id.csv')
+result_path = os.path.join(docu, 'Debug', 'debug-id.csv')
 result = []
 lines = None
 distance = []
@@ -37,8 +38,8 @@ with open(result_path, 'r') as f:
     for line in lines:
         arr = line.strip().split(',')
         result.append(int(arr[0]))
-        #distance.append(int(arr[1]))
-        #strand_id.append(int(arr[-1]))
+        distance.append(int(arr[1]))
+        strand_id.append(int(arr[-1]))
 
 index_path = os.path.join(docu, 'dna_pool-index.csv')
 with open(index_path, 'r') as f: index = f.readlines()

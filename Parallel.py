@@ -107,6 +107,7 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
     start_time = tmp_time
 
     ret_arr = []
+    debug_arr = []
     payloads = []
     for strand_id, strand in enumerate(input_strands):
         forward = strand[:primer_length]
@@ -117,9 +118,11 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
         min_dist = dist_vec[min_id]
         if min_dist < low_threshold:
             ret_arr.append([min_id]) #, min_dist, strand_id+start])
+            debug_arr.append([min_id, min_dist, strand_id+start])
             # payloads.append(get_payload_with_primer(strand, primers[min_id], primer_length))
         elif min_dist > high_threshold:
             ret_arr.append([-1]) # , min_dist, strand_id+start])
+            debug_arr.append([-1, min_dist, strand_id+start])
             # payloads.append(strand[primer_length, -primer_length])
         else:
             forward_edit = []
@@ -134,6 +137,7 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
             total_edit = np.array(forward_edit) + np.array(backward_edit)
             min_id = np.argmin(total_edit)
             ret_arr.append([potential[min_id]]) #, min_dist, strand_id+start])
+            debug_arr.append([potential[min_id], min_dist, strand_id + start])
 
     tmp_time = time.time()
     stat_record['preprocess'] = tmp_time - start_time
@@ -153,8 +157,10 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
 
     output_file_id = os.path.join(docu, 'Output', 'output-' + str(pid) +'-id.csv')
     ret_arr = np.array(ret_arr)
+    debug_arr = np.array(debug_arr)
     sorted_idx = np.argsort(ret_arr[:, 0], axis=0)
     ret_arr = ret_arr[sorted_idx]
+    debug_arr = debug_arr[sorted_idx]
     payloads = np.array(payloads)[sorted_idx]
     np.savetxt(output_file_id, ret_arr, delimiter=",", fmt='%d')
     # with open(output_file_id, 'w') as f:
@@ -166,6 +172,9 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
     # with open(output_file_id, 'w') as f:
     #     for s in payloads:
     #         f.write(s + '\n')
+
+    debug_file_path = os.path.join(docu, 'Debug', 'debug-' + str(pid) +'-info.txt')
+    np.savetxt(debug_file_path, debug_arr, delimiter=",", fmt='%s')
 
     tmp_time = time.time()
     stat_record['output'] = tmp_time - start_time
@@ -243,6 +252,8 @@ if __name__ == '__main__':
         use_func = process_func_fast
     else:
         use_func = process_func
+        os.makedirs(os.path.join(data_docu, 'Debug'), exist_ok=True)
+        clear_directory(os.path.join(data_docu, 'Debug'))
 
     os.makedirs(os.path.join(data_docu, 'Output'), exist_ok=True)
     os.makedirs(os.path.join(data_docu, 'Output_files'), exist_ok=True)
@@ -300,7 +311,7 @@ if __name__ == '__main__':
     id_sub_file = ['output-' + str(index) + '-id.csv' for index in range(cpu_count)]
     id_output_file = 'output-id.csv'
     concatenate_files(id_sub_file, id_output_file, os.path.join(data_docu, 'Output'))
-    payload_sub_file = ['output-' + str(index) + '-payload.txt' for index in range(2)]
+    payload_sub_file = ['output-' + str(index) + '-payload.txt' for index in range(cpu_count)]
     payload_output_file = 'output-payload.csv'
     concatenate_files(payload_sub_file, payload_output_file, os.path.join(data_docu, 'Output'))
     merge_time = time.time() - start
@@ -334,3 +345,8 @@ if __name__ == '__main__':
     # print('RED TIME: ', red_time_per)
     # print('MAX EXT: ', np.amax(ext_time_per))
     # print('EXTRACTION TIME: ', check_point1)
+
+    if args.fast_version != 1:
+        debug_sub_files = ['debug-' + str(index) +'-info.txt' for index in range(cpu_count)]
+        debug_output_file = 'debug-id.csv'
+        concatenate_files(debug_sub_files, debug_output_file, os.path.join(data_docu, 'Debug'))
