@@ -329,6 +329,7 @@ if __name__ == '__main__':
     red_time_per = []
     for f in t_future_list_red:
         red_time_per.append(f.result())
+    print( "----- Standardized std: ", np.std(ext_time_per) / np.mean(ext_time_per), " -----")
     # print('EXT TIME: ', ext_time_per)
     # print('RED TIME: ', red_time_per)
     # print('MAX EXT: ', np.amax(ext_time_per))

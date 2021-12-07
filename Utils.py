@@ -64,7 +64,7 @@ def generate_identifier(grams, forward, backward):
             forward_vec[index] = 1
         if g in backward:
             backward_vec[index] = 1
-    return np.concatenate((forward_vec, backward_vec), axis=0, dtype=bool)
+    return np.concatenate((forward_vec, backward_vec), axis=0)
 
 
 def generate_identifier_fast(grams, forward, backward):
