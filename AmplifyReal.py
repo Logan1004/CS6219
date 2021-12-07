@@ -9,10 +9,10 @@ random.seed(6219)
 
 file_name = 'outpout.txt'
 
-data_docu = '0.03-var'
-error_rate = 0.03
+data_docu = '0.14-var'
+error_rate = 0.14
 default_time = 'gamma'
-append_primer = False
+append_primer = True
 
 primer_size = 30
 data_path = os.path.join(data_docu, 'raw_data', file_name)
@@ -91,7 +91,7 @@ with open(output_path_4, 'w') as out_file:
          out_file.write(l.strip()+"\n")
     out_file.close()
 
-if forward != '':
+if append_primer:
     for primer_size in [1, 10, 20, 30]:
         subfolder = 'Primer_' + str(primer_size)
         print(subfolder)

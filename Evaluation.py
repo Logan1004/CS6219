@@ -37,8 +37,8 @@ with open(result_path, 'r') as f:
     for line in lines:
         arr = line.strip().split(',')
         result.append(int(arr[0]))
-        distance.append(int(arr[1]))
-        strand_id.append(int(arr[-1]))
+        #distance.append(int(arr[1]))
+        #strand_id.append(int(arr[-1]))
 
 index_path = os.path.join(docu, 'dna_pool-index.csv')
 with open(index_path, 'r') as f: index = f.readlines()
@@ -80,19 +80,19 @@ print('DROP: ', miss / len(result))
 # for c in tricky_case[:10]:
 #     print(c)
 
-pool_path = os.path.join(docu, 'dna_pool.txt')
-with open(pool_path, 'r') as f:
-    pool = f.readlines()
-primer_path = os.path.join(docu, p_folder, 'primer.txt')
-primers = read_primers(primer_path)
-wrong_info_path = os.path.join(docu, 'wrong_information.txt')
-with open(wrong_info_path, 'w') as f:
-    csvwriter = csv.writer(f)
-    csvwriter.writerow(['index', 'truth forward', 'truth backward', 'predict forward', 'predict backward', 'strand'])
-    for i in wrong_id:
-        label_id = index[i]
-        predict_id = result[i]
-        strand = pool[i]
-        ref_strand = ref_str[label_id].strip().split('_')[0]
-        csvwriter.writerow([i, ref_strand[:primer_length], ref_strand[-primer_length:],
-                            primers[predict_id][0], primers[predict_id][1], strand.strip()])
+# pool_path = os.path.join(docu, 'dna_pool.txt')
+# with open(pool_path, 'r') as f:
+#     pool = f.readlines()
+# primer_path = os.path.join(docu, p_folder, 'primer.txt')
+# primers = read_primers(primer_path)
+# wrong_info_path = os.path.join(docu, 'wrong_information.txt')
+# with open(wrong_info_path, 'w') as f:
+#     csvwriter = csv.writer(f)
+#     csvwriter.writerow(['index', 'truth forward', 'truth backward', 'predict forward', 'predict backward', 'strand'])
+#     for i in wrong_id:
+#         label_id = index[i]
+#         predict_id = result[i]
+#         strand = pool[i]
+#         ref_strand = ref_str[label_id].strip().split('_')[0]
+#         csvwriter.writerow([i, ref_strand[:primer_length], ref_strand[-primer_length:],
+#                             primers[predict_id][0], primers[predict_id][1], strand.strip()])

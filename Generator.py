@@ -51,9 +51,9 @@ class Generator:
             index = index // 4
         return ''.join(index_base)
 
-    def generate_single_file(self, primer_id, payload_size=60):
-        file_size = random.randint(file_size_range[0], file_size_range[1])
-        # file_size = 65534
+    def generate_single_file(self, primer_id, payload_size=100):
+        #file_size = random.randint(file_size_range[0], file_size_range[1])
+        file_size = 2000 #65534
         ret_arr = []
         forward_primer = self.primers_arr[primer_id][0]
         backward_primer = self.primers_arr[primer_id][1]

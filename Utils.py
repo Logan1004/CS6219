@@ -5,6 +5,7 @@ import csv
 import numpy as np
 import pickle
 import shutil
+import numba
 
 def read_amplified_strands(input_file):
     counter = 0
@@ -56,14 +57,25 @@ def generate_n_grams(n, alpha=['A', 'T', 'C', 'G']):
 
 def generate_identifier(grams, forward, backward):
     grams_size = len(grams)
-    forward_vec = np.zeros(grams_size)
-    backward_vec = np.zeros(grams_size)
+    forward_vec = np.zeros(grams_size, dtype=bool)
+    backward_vec = np.zeros(grams_size, dtype=bool)
     for index, g in enumerate(grams):
         if g in forward:
             forward_vec[index] = 1
         if g in backward:
             backward_vec[index] = 1
-    return np.concatenate((forward_vec, backward_vec), axis=0)
+    return np.concatenate((forward_vec, backward_vec), axis=0, dtype=bool)
+
+
+def generate_identifier_fast(grams, forward, backward):
+    grams_size = len(grams)
+    return_vec = np.zeros(2 * grams_size, dtype=bool)
+    for index, g in enumerate(grams):
+        if g in forward:
+            return_vec[index] = 1
+        if g in backward:
+            return_vec[index + grams_size] = 1
+    return return_vec
 
 
 def read_primers(primer_file):
@@ -180,28 +192,40 @@ def generate_raw_data_from_amplified(input_file, output_file):
             csvwriter.writerow([tmp])
 
 
+@numba.njit(fastmath=True,cache=True)
+def fast_distance_calculate(primer_m, strand_m):
+    ret_mat = np.empty((strand_m.shape[0], primer_m.shape[0]))
+    for i in range(strand_m.shape[0]):
+        for j in range(primer_m.shape[0]):
+            acc = 0
+            for k in range(strand_m.shape[1]):
+                acc += strand_m[i, k] ^ primer_m[j, k]
+            ret_mat[i, j] = acc
+            #ret_mat[i, j] = np.sum(strand_m[i, :] ^ primer_m[j, :])
+    return ret_mat
+
 if __name__ == '__main__':
     # input_file = sys.argv[1]
     # noise, noise_id = read_amplified_strands(input_file)
     # output_file = sys.argv[2]
     # store_shuffled_strands(output_file, noise, noise_id)
 
-    # primer_file = sys.argv[1]
-    # output_file = sys.argv[2]
-    # primers = read_primers(primer_file)
-    # for count in [6, 7]:
-    #     mat = []
-    #     grams = generate_n_grams(count)
-    #     for pair in primers:
-    #         identifier = generate_identifier(grams, pair[0], pair[1])
-    #         mat.append(identifier)
-    #     mat = np.array(mat)
-    #     np.save(output_file + '-' + str(count), mat)
+    primer_file = sys.argv[1]
+    output_file = sys.argv[2]
+    primers = read_primers(primer_file)
+    for count in [3, 4, 5]:
+        mat = []
+        grams = generate_n_grams(count)
+        for pair in primers:
+            identifier = generate_identifier(grams, pair[0], pair[1])
+            mat.append(identifier)
+        mat = np.array(mat)
+        np.save(output_file + '-' + str(count), mat)
 
     # Command: Python3 Utils.py 'synthesis_data_6219/amplified_strands.txt' 'synthesis_data_6219/UnderlyingClusters.txt'
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    generate_underlying_cluster(input_file, output_file)
+    # input_file = sys.argv[1]
+    # output_file = sys.argv[2]
+    # generate_underlying_cluster(input_file, output_file)
 
     # Command: Python3 Utils.py 'synthesis_data_6219/amplified_strands.txt' 'synthesis_data_6219/raw_data/output.txt'
     # input_file = sys.argv[1]

@@ -9,6 +9,78 @@ from Utils import *
 import os
 
 
+def process_func_fast(docu, start, end, n_gram, primer_length, low_threshold, high_threshold, pid, ext_version, primer_size):
+    stat_record = dict()
+    stat_record['pid'] = pid
+    start_time = time.time()
+
+    input_path = os.path.join(docu, 'dna_pool.txt')
+    input_strands = []
+    with open(input_path, "r") as text_file:
+        for line in itertools.islice(text_file, start, end):
+            input_strands.append(line.strip())
+
+    grams = generate_n_grams(n_gram)
+    if primer_size == -1:
+        primer_folder = 'Primer'
+    else:
+        primer_folder = 'Primer_' + str(primer_size)
+    primer_id_path = os.path.join(docu, primer_folder, 'primer_gram-' + str(n_gram) +'.npy')
+    primer_path = os.path.join(docu, primer_folder, 'primer.txt')
+    primers = read_primers(primer_path)
+    primer_id_mat = np.load(primer_id_path)
+
+    tmp_time = time.time()
+    stat_record['initialization'] = tmp_time - start_time
+    start_time = tmp_time
+
+    payloads = []
+    identifier_mat = np.empty((len(input_strands), primer_id_mat.shape[1]), dtype=bool)
+    for strand_id, strand in enumerate(input_strands):
+        forward = strand[:primer_length]
+        backward = strand[-primer_length:]
+        identifier = generate_identifier_fast(grams, forward, backward)
+        identifier_mat[strand_id, :] = identifier
+
+    dist_mat = fast_distance_calculate(primer_id_mat, identifier_mat)
+    ret_arr = np.argmin(dist_mat, axis=1)
+
+    tmp_time = time.time()
+    stat_record['preprocess'] = tmp_time - start_time
+    start_time = tmp_time
+
+    for index in range(len(ret_arr)):
+        ret_id = ret_arr[index]
+        strand = input_strands[index]
+        if ret_id == -1 or ext_version == 0:
+            payloads.append(strand[primer_length: -primer_length])
+        else:
+            payloads.append(get_payload_with_primer(strand, primers[ret_id], primer_length))
+
+    tmp_time = time.time()
+    stat_record['extraction'] = tmp_time - start_time
+    start_time = tmp_time
+
+    output_file_id = os.path.join(docu, 'Output', 'output-' + str(pid) +'-id.csv')
+    ret_arr = np.array(ret_arr)
+    sorted_idx = np.argsort(ret_arr)
+    ret_arr = ret_arr[sorted_idx]
+    payloads = np.array(payloads)[sorted_idx]
+
+    with open(output_file_id, 'w') as f:
+        for a in ret_arr:
+            f.write(str(a) + '\n')
+
+    output_file_id = os.path.join(docu, 'Output', 'output-' + str(pid) +'-payload.txt')
+    with open(output_file_id, 'w') as f:
+        for s in payloads:
+            f.write(s + '\n')
+
+    tmp_time = time.time()
+    stat_record['output'] = tmp_time - start_time
+
+    return stat_record
+
 def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_threshold, pid, ext_version, primer_size):
     stat_record = dict()
     stat_record['pid'] = pid
@@ -100,7 +172,6 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
 
     return stat_record
 
-
 def extract_func(docu, primer_id, process_id, index):
     start_time = time.time()
     input_docu = os.path.join(docu, 'Output')
@@ -108,6 +179,11 @@ def extract_func(docu, primer_id, process_id, index):
     os.makedirs(output_docu, exist_ok=True)
 
     # index = np.genfromtxt(intput_id, delimiter=',', dtype=np.int32)[:, 0]
+    # intput_ps_path = os.path.join(docu, 'Output', 'output-' + str(process_id) + '-id.csv')
+    # with open(intput_ps_path, 'r') as f:
+    #     lines = f.readlines()
+    #     index = [int(line.strip()) for line in lines]
+    # index = np.array(index, dtype=np.int32)
     position = np.where(index == primer_id)
 
     if len(position[0]) == 0:
@@ -153,6 +229,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--docu', type=str, default='real_data_6219', help='input document (default: real_data_6219)')
     parser.add_argument('-e', '--extraction', type=int, default=1, help='0 - naive extraction, 1 - precise extraction (default 1)')
     parser.add_argument('-s', '--primer_size', type=int, default=-1, help='-1 - meta, >1 - customer (default -1)')
+    parser.add_argument('-f', '--fast_version', type=int, default=0, help='-1 - fast, 0 - trivial (default 0)')
     args = parser.parse_args()
 
     data_docu = args.docu
@@ -162,6 +239,10 @@ if __name__ == '__main__':
     low_threshold = int(args.low_threshold)
     high_threshold = int(args.high_threshold)
     extraction_version = int(args.extraction)
+    if args.fast_version == 1:
+        use_func = process_func_fast
+    else:
+        use_func = process_func
 
     os.makedirs(os.path.join(data_docu, 'Output'), exist_ok=True)
     os.makedirs(os.path.join(data_docu, 'Output_files'), exist_ok=True)
@@ -183,9 +264,11 @@ if __name__ == '__main__':
         for pid in range(cpu_count):
             begin = pid * strands_per_cpu
             end = min(begin + strands_per_cpu, meta['strand size'])
-            tmp_fut = executor.submit(process_func, data_docu, begin, end, q_grams, primer_length,
-                                      low_threshold, high_threshold, pid, extraction_version, meta['primer size'])
+            tmp_fut = executor.submit(use_func, data_docu, begin, end, q_grams, primer_length,
+                                      low_threshold, high_threshold, pid, extraction_version, int(args.primer_size))
             future_list.append(tmp_fut)
+    # for f in future_list:
+    #     print(f.result())
     parallel_time = time.time() - start
     # print('Parallel Processing Time:', parallel_time)
 
@@ -195,13 +278,14 @@ if __name__ == '__main__':
     with concurrent.futures.ProcessPoolExecutor(cpu_count) as ext_executor:
         for ps in range(cpu_count):
             intput_ps_path = os.path.join(data_docu, 'Output', 'output-' + str(ps) + '-id.csv')
-            with open(intput_ps_path) as f:
+            with open(intput_ps_path, 'r') as f:
                 lines = f.readlines()
                 index = [int(line.strip()) for line in lines]
             index = np.array(index, dtype=np.int32)
             for fid in range(meta['primer size']):
                 tmp_fut = ext_executor.submit(extract_func, data_docu, fid, ps, np.copy(index))
                 t_future_list_ext.append(tmp_fut)
+    check_point1 = time.time() - start
 
     with concurrent.futures.ProcessPoolExecutor(cpu_count) as red_executor:
         for fid in range(meta['primer size']):
@@ -235,12 +319,17 @@ if __name__ == '__main__':
                              tmp_stat['output'] ])
 
     print("----- Total time: ", parallel_time + reduce_time, " -----")
-    # ext_time_per = []
-    # for f in t_future_list_ext:
-    #     ext_time_per.append(f.result())
-    # red_time_per = []
-    # for f in t_future_list_red:
-    #     red_time_per.append(f.result())
+    #
+    ext_time_per = []
+    for f in t_future_list_ext:
+        ext_time_per.append(f.result())
+    ext_time_path = os.path.join(data_docu, 'extract.pickle')
+    with open(ext_time_path, 'wb') as f:
+       pickle.dump(ext_time_per, f)
+    red_time_per = []
+    for f in t_future_list_red:
+        red_time_per.append(f.result())
     # print('EXT TIME: ', ext_time_per)
     # print('RED TIME: ', red_time_per)
     # print('MAX EXT: ', np.amax(ext_time_per))
+    # print('EXTRACTION TIME: ', check_point1)
