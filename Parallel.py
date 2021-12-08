@@ -45,6 +45,11 @@ def process_func_fast(docu, start, end, n_gram, primer_length, low_threshold, hi
     dist_mat = fast_distance_calculate(primer_id_mat, identifier_mat)
     ret_arr = np.argmin(dist_mat, axis=1)
 
+    if low_threshold != 99999:
+        q_gram_dist = np.min(dist_mat, axis=1)
+        filtered_idx = q_gram_dist > low_threshold
+        ret_arr[filtered_idx] = -1
+
     tmp_time = time.time()
     stat_record['preprocess'] = tmp_time - start_time
     start_time = tmp_time
@@ -120,14 +125,14 @@ def process_func(docu, start, end, n_gram, primer_length, low_threshold, high_th
             ret_arr.append([min_id]) #, min_dist, strand_id+start])
             debug_arr.append([min_id, min_dist, strand_id+start])
             # payloads.append(get_payload_with_primer(strand, primers[min_id], primer_length))
-        elif min_dist > high_threshold:
+        elif min_dist >= high_threshold:
             ret_arr.append([-1]) # , min_dist, strand_id+start])
             debug_arr.append([-1, min_dist, strand_id+start])
             # payloads.append(strand[primer_length, -primer_length])
         else:
             forward_edit = []
             backward_edit = []
-            potential = np.argsort(dist_vec)[:3]
+            potential = np.argsort(dist_vec)[:7]
             for pot_id in potential:
                 p = primers[pot_id]
                 tmp_forward_edit = edit_distance(p[0], forward, len(p[0]), len(forward))

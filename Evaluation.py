@@ -9,6 +9,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--docu', type=str, default='real_data_6219', help='input document (default: real_data_6219)')
 parser.add_argument('-s', '--primer_size', type=int, default=-1, help='primer size')
+parser.add_argument('-p', '--draw_fig', type=int, default=0, help='1 - draw picture; 0-not (default: 0)')
 args = parser.parse_args()
 
 docu = args.docu
@@ -71,9 +72,18 @@ bins = np.linspace(20, 100, 40)
 print('ACC: ', np.mean(acc))
 print('DROP: ', miss / len(result))
 
-# plt.hist(wrong_distance, bins=bins, color='red', alpha=0.5, label='wrong', density=True)
-# plt.hist(distance, bins=bins, color='blue', alpha=0.5, label='true', density=True)
-# plt.show()
+
+if args.draw_fig == 1:
+    plt.hist(wrong_distance, bins=bins, color='red', alpha=0.5, label='wrong case', density=True)
+    plt.hist(distance, bins=bins, color='blue', alpha=0.5, label='true case', density=True)
+    plt.legend()
+    plt.title('Normalized distribution of Q-grams distacne in default setting')
+    plt.xlabel('Q-grams distance')
+    #plt.axvline(x=np.min(wrong_distance),linewidth=1, color='r', label='mean')
+    print(np.min(wrong_distance))
+    print(np.max(distance))
+    #plt.savefig('error.svg', format='svg')
+    plt.show()
 
 # for c in wrong_case[:10]:
 #     print(c)
